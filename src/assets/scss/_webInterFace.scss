@@ -41,7 +41,7 @@
 .logo-icon {
   width: 35px;
   height: 35px;
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: #1f2a60;
   color: white;
   border-radius: 10px;
   display: flex;
@@ -52,8 +52,8 @@
 
 .logo-text {
   display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+  align-items: center;
+  gap: 4px;
 }
 
 .logo-title {
@@ -70,7 +70,7 @@
 }
 
 .new-chat-btn {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: #0d6efd;
   border: none;
   color: white;
   padding: 10px;
@@ -167,11 +167,11 @@
 }
 
 .welcome-icon {
-  width: 50px;
-  height: 50px;
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  width: 65px;
+  height: 65px;
+  background: #1f2a60;
   color: white;
-  font-size: 26px;
+  font-size: 40px;
   border-radius: 16px;
   display: inline-flex;
   align-items: center;
@@ -221,7 +221,7 @@
 }
 
 .chat-message.user .text {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: #1f2a60;
   align-self: flex-end;
   color: white;
   border-radius: 12px;
@@ -293,7 +293,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
- }
+}
 
 .input-container {
   display: flex;
@@ -400,7 +400,7 @@
 }
 
 .send-btn {
-  background: linear-gradient(135deg, #7c3aed, #6366f1);
+  background: #1f2a60;
   border: none;
   width: 44px;
   height: 44px;
@@ -412,14 +412,14 @@
   font-size: 18px;
 }
 .attach-btn {
-   border: none;
+  border: none;
   width: 44px;
   height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7c3aed;
+  color: #9ca3af;
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -435,19 +435,158 @@
   right: 40px;
   bottom: 85px;
   z-index: 50;
-  }
+}
 .voice-btn {
-   border: none;
-  width: 25px;
-  height: 25px;
-  border-radius: 50%;        
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7c3aed;
-  font-size: 23px;           
+  color: white;
+  font-size: 23px;
   cursor: pointer;
   transition: background 0.2s ease;
+  background-color: #4891ff;
 }
 
- 
+.subject-list {
+  list-style: none;
+  padding: 0;
+}
+
+.subject-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.subject-list li.active {
+  background-color: #eaf2ff;
+  color: #0d6efd;
+}
+
+.icon {
+  font-size: 18px;
+}
+
+.icon.heart {
+  color: #e63946;
+}
+
+.icon.plus {
+  color: #6f42c1;
+}
+
+.icon.checklist {
+  color: #3a86ff;
+}
+
+.icon.globe {
+  color: #2a9d8f;
+}
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.suggestion.blue {
+  background: #eef5ff;
+  border: 1px solid #c7ddff;
+}
+
+.suggestion.purple {
+  background: #f5f0ff;
+  border: 1px solid #d8caff;
+}
+
+.suggestion.green {
+  background: #effff4;
+  border: 1px solid #bdf0cf;
+}
+.logo-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  background-color: #1f2a60;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  line-height: 1;
+}
+
+.logo-subtitle {
+  font-size: 18px;
+  color: #0d6efd;
+  font-weight: 100;
+}
+.lesson-dropdown select {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #c7ddff;
+  background: #eef5ff;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+}
+.recent-chat-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-chat-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  height: 64px;
+}
+
+.recent-chat-list input[type="checkbox"] {
+  margin-top: 4px;
+}
+
+.chat-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.chat-date {
+  font-size: 12px;
+  color: #6b7280;
+}
+.ai-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f2a60;
+}
+
+.ai-logo .logo-icon {
+  background: #1f2a60;
+  color: #fff;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 18px;
+}
+
+.ai-logo .logo-subtitle {
+  color: #2563eb;
+  font-weight: 600;
+  margin-left: 4px;
+}

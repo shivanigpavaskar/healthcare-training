@@ -5,16 +5,18 @@ import "./assets/scss/_webInterFace.scss";
 import "./assets/scss/_aiTutorLayout.scss";
 import Chatbot from "./assets/Chat-icon.png";
 import Agent from "./assets/live-agent-icon.png";
-import { HiOutlineAcademicCap, HiOutlineBookOpen } from "react-icons/hi2";
+import { HiOutlineBookOpen } from "react-icons/hi2";
 import toast from "react-hot-toast";
 import { BiSend } from "react-icons/bi";
 import config from "./config.json";
 import MediaRenderer from "./MediaRenderer";
 import JSON5 from "json5";
 import DOMPurify from "dompurify";
-import { FiPaperclip, FiX } from "react-icons/fi";
+import { FiMessageSquare, FiPaperclip, FiX } from "react-icons/fi";
 import he from "he";
 import { MdOutlineKeyboardVoice } from "react-icons/md";
+import { BsHeartPulse, BsPlusLg } from "react-icons/bs";
+import { GoGraph } from "react-icons/go";
 
 const SESSION_KEY = "chat_session_id";
 const SESSION_TIMESTAMP_KEY = "chat_session_created_at";
@@ -94,7 +96,7 @@ const ChatInterface = () => {
   const [_statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
   const [_mediaLoader, setMediaLoader] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
- 
+
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeechPlayingRef = useRef(false);
@@ -135,8 +137,7 @@ const ChatInterface = () => {
         null;
 
       selectedVoiceRef.current = selected;
-
-     };
+    };
 
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -691,30 +692,27 @@ const ChatInterface = () => {
     }
   }, [currentStatus]);
 
-useEffect(() => {
-  if (!chatBodyRef.current) return;
+  useEffect(() => {
+    if (!chatBodyRef.current) return;
 
-  const el = chatBodyRef.current;
+    const el = chatBodyRef.current;
 
-   el.scrollTo({
-    top: el.scrollHeight,
-    behavior: "smooth",
-  });
-}, [messages]);
-
-
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [messages]);
 
   return (
     <div className="ai-tutor-app">
       <header className="ai-topbar">
-        <div className="ai-logo">
-          <HiOutlineAcademicCap className="logo-icon" />
+           <div className="logo-text">
+            <div>
 
-          <div className="logo-text">
-            <span className="logo-title">AI Tutor</span>
-            <h6 className="logo-subtitle">Let's learn together! 🚀</h6>
-          </div>
-        </div>
+            <span className="logo-title">HEALTHCARE</span>
+            </div>
+            <h6 className="logo-subtitle">TRAINING</h6>
+         </div>
 
         <span>⚙️</span>
       </header>
@@ -725,42 +723,69 @@ useEffect(() => {
 
           <div className="sidebar-section">
             <p className="sidebar-title">Pick a Subject</p>
-            <ul>
-              <li className="active"> 🔬 Science</li>
-              <li>📐 Mathematics</li>
-              <li>📖 Literature</li>
-              <li>🌍 History</li>
+            <ul className="subject-list">
+              <li className="active">
+                <BsHeartPulse className="icon heart" />
+                CPR / BLS
+              </li>
+
+              <li>
+                <BsPlusLg className="icon plus" />
+                First Aid
+              </li>
+
+              <li>
+                <GoGraph className="icon checklist" />
+                ACLS
+              </li>
             </ul>
           </div>
 
           <div className="sidebar-section">
             <p className="sidebar-title">Choose Lesson/Chapter</p>
-            <div className="static-pill">Biology</div>
+
+            <div className="lesson-dropdown">
+              <select>
+                <option>Critical concepts of high-quality CPR</option>
+                <option>Chain of Survival</option>
+                <option>Adult CPR Techniques</option>
+                <option>Airway & Breathing</option>
+              </select>
+            </div>
           </div>
 
           <div className="sidebar-section">
-            <p className="sidebar-title"> 💭 Your Recent Chats</p>
+            <p className="sidebar-title">Your Recent Chats</p>
 
-            <div className="recent-chat-item">
-              <div>
-                <p className="chat-title"> What Is Photosynthesis ? </p>
-                <h6 className="chat-date">Today</h6>
-              </div>
-            </div>
-            <div className="recent-chat-item">
-              <div>
-                <p className="chat-title">
-                  Help me to solve this Quadratic equation
-                </p>
-                <h6 className="chat-date">Yesterday</h6>
-              </div>
-            </div>
+            <ul className="recent-chat-list">
+              <li>
+                <FiMessageSquare />
+                <div>
+                  <p className="chat-title">What do asthma sufferers...</p>
+                  <span className="chat-date">Today</span>
+                </div>
+              </li>
+
+              <li>
+                <FiMessageSquare />
+                <div>
+                  <p className="chat-title">What causes hyperventilation?</p>
+                  <span className="chat-date">Yesterday</span>
+                </div>
+              </li>
+
+              <li>
+                <FiMessageSquare />
+                <div>
+                  <p className="chat-title">What is the main aim of first...</p>
+                  <span className="chat-date">3 days ago</span>
+                </div>
+              </li>
+            </ul>
           </div>
         </aside>
 
         <main className="ai-main">
-          {/* ===== Chat Area ===== */}
-
           <section className="ai-chat-container">
             <div className="chat-wrapper">
               <div
@@ -768,29 +793,30 @@ useEffect(() => {
                 ref={chatBodyRef}
                 onScroll={handleScroll}
               >
-                {/* ===== Welcome Screen ===== */}
                 {noUserMessages && (
                   <div className="welcome-screen">
                     <div className="welcome-icon">
                       <HiOutlineBookOpen />
                     </div>
-                    <h2>Hey there! Ready to learn? 👋</h2>
+
+                    <h2>Your Medical Learning Support System 👋</h2>
                     <p>
-                      I'm your friendly AI tutor, here to help you understand
-                      anything! Ask me questions, get homework help, or practice
-                      for your next test.
+                      Get clear explanations, course help, and protocol support
+                      for resuscitation, emergency care, and medical
+                      certification courses.
                     </p>
 
                     <div className="suggestions">
-                      <div>💡 "Explain photosynthesis like I'm 10"</div>
-                      <div>📐 "Help me solve x² + 5x + 6 = 0"</div>
-                      <div>🎯 "Quiz me on the American Revolution"</div>
-                    </div>
-
-                    <div className="quick-actions">
-                      <button disabled>✨ Explain this simply</button>
-                      <button disabled>📝 Help with homework</button>
-                      <button disabled>🎯 Quiz me!</button>
+                      <div className="suggestion blue">
+                        <BsPlusLg /> “What is anaphylaxis?”
+                      </div>
+                      <div className="suggestion purple">
+                        <BsPlusLg /> “What should you do first before helping a
+                        casualty?”
+                      </div>
+                      <div className="suggestion green">
+                        <BsPlusLg /> “What causes hyperventilation?”
+                      </div>
                     </div>
                   </div>
                 )}
@@ -880,7 +906,6 @@ useEffect(() => {
                 </div>
               )}
 
-              {/* ===== Input Bar ===== */}
               <div className="chat-input">
                 <div className="input-container">
                   {filePreviewUrl && pendingFile && (
@@ -912,8 +937,12 @@ useEffect(() => {
                     className="message-input"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onClick={() => window.speechSynthesis.cancel()} // unlock speech
-                    placeholder={pendingFile ? "" : "Write message here..."}
+                    onClick={() => window.speechSynthesis.cancel()}  
+                    placeholder={
+                      pendingFile
+                        ? ""
+                        : "Ask me anything! I'm here to help you learn 😊"
+                    }
                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
                   />
                   <button className="voice-btn">
