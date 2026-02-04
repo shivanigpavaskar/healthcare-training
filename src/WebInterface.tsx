@@ -17,6 +17,7 @@ import he from "he";
 import { MdOutlineKeyboardVoice } from "react-icons/md";
 import { BsHeartPulse, BsPlusLg } from "react-icons/bs";
 import { GoGraph } from "react-icons/go";
+import Select from "react-select";
 
 const SESSION_KEY = "chat_session_id";
 const SESSION_TIMESTAMP_KEY = "chat_session_created_at";
@@ -100,6 +101,26 @@ const ChatInterface = () => {
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeechPlayingRef = useRef(false);
+
+  const lessonOptions = [
+    { value: "cpr", label: "Critical concepts of high-quality CPR" },
+    {
+      value: "chain",
+      label: "The American Heart Association Chain of Survival",
+    },
+    {
+      value: "one",
+      label: "1-Rescuer CPR and AED for adult, child and infant",
+    },
+    {
+      value: "two",
+      label: "2-Rescuer CPR and AED for adult, child and infant",
+    },
+    {
+      value: "diff",
+      label: "Differences between adult, child and infant rescue techniques",
+    },
+  ];
 
   useEffect(() => {
     const loadVoices = () => {
@@ -706,13 +727,12 @@ const ChatInterface = () => {
   return (
     <div className="ai-tutor-app">
       <header className="ai-topbar">
-           <div className="logo-text">
-            <div>
-
+        <div className="logo-text">
+          <div>
             <span className="logo-title">HEALTHCARE</span>
-            </div>
-            <h6 className="logo-subtitle">TRAINING</h6>
-         </div>
+          </div>
+          <h6 className="logo-subtitle">TRAINING</h6>
+        </div>
 
         <span>⚙️</span>
       </header>
@@ -743,14 +763,12 @@ const ChatInterface = () => {
 
           <div className="sidebar-section">
             <p className="sidebar-title">Choose Lesson/Chapter</p>
-
             <div className="lesson-dropdown">
-              <select>
-                <option>Critical concepts of high-quality CPR</option>
-                <option>Chain of Survival</option>
-                <option>Adult CPR Techniques</option>
-                <option>Airway & Breathing</option>
-              </select>
+              <Select
+                options={lessonOptions}
+                defaultValue={lessonOptions[0]}
+                isSearchable={false}
+              />
             </div>
           </div>
 
@@ -937,7 +955,7 @@ const ChatInterface = () => {
                     className="message-input"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onClick={() => window.speechSynthesis.cancel()}  
+                    onClick={() => window.speechSynthesis.cancel()}
                     placeholder={
                       pendingFile
                         ? ""
