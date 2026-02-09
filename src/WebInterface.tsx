@@ -97,10 +97,16 @@ const ChatInterface = () => {
   const [_statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
   const [_mediaLoader, setMediaLoader] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-
   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeechPlayingRef = useRef(false);
+  const isSpeechManuallyStoppedRef = useRef(false);
+  const lastQueuedMessageIdRef = useRef<string | null>(null);
+  const [showSpeakingVideo, setShowSpeakingVideo] = useState(false);
+  const speakingVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // stores active utterance (browser-level control)
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const lessonOptions = [
     { value: "cpr", label: "Critical concepts of high-quality CPR" },
@@ -123,42 +129,41 @@ const ChatInterface = () => {
   ];
 
   useEffect(() => {
-    const loadVoices = () => {
-      const voices = window.speechSynthesis.getVoices();
+   const loadVoices = () => {
+     const voices = window.speechSynthesis.getVoices();
 
-      // Priority list of known female voices across browsers
-      const preferredFemaleNames = [
-        // Edge / Windows
-        "Microsoft Aria",
-        "Microsoft Jenny",
-        "Microsoft Sonia",
-        "Microsoft Natasha",
-        "Microsoft Zira",
+     // 🎯 Best → worst (human → robotic)
+     const preferredFemaleNames = [
+       // 🔥 Most human (Edge / Windows Neural)
+       "Microsoft Aria Neural",
+       "Microsoft Jenny Neural",
+       "Microsoft Sonia Neural",
 
-        // Chrome
-        "Google UK English Female",
-        "Google US English",
+       // 🔥 Safari (very natural)
+       "Samantha",
+       "Karen",
+       "Tessa",
 
-        // Safari
-        "Samantha",
-        "Karen",
-        "Tessa",
-      ];
+       // 👍 Chrome (acceptable)
+       "Google UK English Female",
 
-      let selected =
-        voices.find((v) =>
-          preferredFemaleNames.some((name) =>
-            v.name.toLowerCase().includes(name.toLowerCase()),
-          ),
-        ) ||
-        // fallback: any voice explicitly containing female
-        voices.find((v) => /female|woman/i.test(v.name)) ||
-        // final fallback: first English voice
-        voices.find((v) => v.lang.startsWith("en")) ||
-        null;
+       // ⚠️ Last fallback only
+       "Microsoft Zira",
+     ];
 
-      selectedVoiceRef.current = selected;
-    };
+     let selected =
+       voices.find((v) =>
+         preferredFemaleNames.some((name) =>
+           v.name.toLowerCase().includes(name.toLowerCase()),
+         ),
+       ) ||
+       voices.find((v) => /female|woman/i.test(v.name)) ||
+       voices.find((v) => v.lang.startsWith("en")) ||
+       null;
+
+     selectedVoiceRef.current = selected;
+   };
+
 
     loadVoices();
     window.speechSynthesis.onvoiceschanged = loadVoices;
@@ -190,36 +195,55 @@ const ChatInterface = () => {
     );
   };
 
-  const playNextInQueue = () => {
-    if (isSpeechPlayingRef.current) return;
-    if (speechQueueRef.current.length === 0) return;
+ const playNextInQueue = () => {
+   if (isSpeechPlayingRef.current) return;
+   if (!speechQueueRef.current.length) return;
+   if (isSpeechManuallyStoppedRef.current) return;
 
-    const text = speechQueueRef.current.shift();
-    if (!text) return;
+   window.speechSynthesis.cancel();
 
-    isSpeechPlayingRef.current = true;
+   const text = speechQueueRef.current.shift();
+   if (!text) return;
 
-    const cleanText = text.replace(/<[^>]*>/g, "");
-    const utterance = new SpeechSynthesisUtterance(cleanText);
+   // 🧠 HUMAN PAUSES (very important)
+   const cleanText = text.replace(/<[^>]*>/g, "").replace(/([.!?])/g, "$1,");
 
-    utterance.lang = "en-US";
-    utterance.rate = 1;
-    utterance.pitch = 1.1;
+   const utterance = new SpeechSynthesisUtterance(cleanText);
+   activeUtteranceRef.current = utterance;
+   isSpeechPlayingRef.current = true;
 
-    if (selectedVoiceRef.current) {
-      utterance.voice = selectedVoiceRef.current;
-    }
+   // 🎧 HUMAN VOICE TUNING
+   utterance.lang = "en-US";
+   utterance.rate = 0.9; // slower, calm
+   utterance.pitch = 1.2; // warm female tone
+   utterance.volume = 1;
 
-    utterance.onstart = () => setIsSpeaking(true);
+   if (selectedVoiceRef.current) {
+     utterance.voice = selectedVoiceRef.current;
+   }
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      isSpeechPlayingRef.current = false;
-      playNextInQueue(); // play next message automatically
-    };
+   utterance.onstart = () => {
+     setShowSpeakingVideo(true);
+   };
 
-    window.speechSynthesis.speak(utterance);
-  };
+   utterance.onend = () => {
+     isSpeechPlayingRef.current = false;
+     activeUtteranceRef.current = null;
+     setShowSpeakingVideo(false);
+
+     if (!isSpeechManuallyStoppedRef.current) {
+       playNextInQueue();
+     }
+   };
+
+   // ⚠️ Chrome reliability fix
+   setTimeout(() => {
+     if (!isSpeechManuallyStoppedRef.current) {
+       window.speechSynthesis.speak(utterance);
+     }
+   }, 80);
+ };
+
 
   const decodeHtml = (html: string): string => {
     const txt = document.createElement("textarea");
@@ -614,25 +638,67 @@ const ChatInterface = () => {
   //   };
   // }, []);
 
-  const lastQueuedMessageIdRef = useRef<string | null>(null);
+  const stopSpeechManually = () => {
+    isSpeechManuallyStoppedRef.current = true;
+
+    window.speechSynthesis.cancel();
+
+    speechQueueRef.current = [];
+    activeUtteranceRef.current = null;
+    isSpeechPlayingRef.current = false;
+
+    if (speakingVideoRef.current) {
+      speakingVideoRef.current.pause();
+      speakingVideoRef.current.currentTime = 0;
+    }
+
+    setShowSpeakingVideo(false);
+  };
+
+  // useEffect(() => {
+  //   const botMessages = messages.filter(
+  //     (msg) =>
+  //       (msg.sender === "bot" || msg.sender === "agent") && msg.id !== "loader",
+  //   );
+
+  //   if (botMessages.length === 0) return;
+  //   // isSpeechManuallyStoppedRef.current = false;
+
+  //   // Find new messages since last queued
+  //   const lastQueuedId = lastQueuedMessageIdRef.current;
+  //   const startIndex = lastQueuedId
+  //     ? botMessages.findIndex((m) => m.id === lastQueuedId) + 1
+  //     : 0;
+
+  //   const newMessages = botMessages.slice(startIndex);
+
+  //   if (newMessages.length === 0) return;
+
+  //   newMessages.forEach((m) => {
+  //     speechQueueRef.current.push(m.text);
+  //   });
+
+  //   lastQueuedMessageIdRef.current = newMessages[newMessages.length - 1].id;
+
+  //   playNextInQueue();
+  // }, [messages]);
 
   useEffect(() => {
     const botMessages = messages.filter(
-      (msg) =>
-        (msg.sender === "bot" || msg.sender === "agent") && msg.id !== "loader",
+      (m) => (m.sender === "bot" || m.sender === "agent") && m.id !== "loader",
     );
 
-    if (botMessages.length === 0) return;
+    if (!botMessages.length) return;
 
-    // Find new messages since last queued
     const lastQueuedId = lastQueuedMessageIdRef.current;
     const startIndex = lastQueuedId
       ? botMessages.findIndex((m) => m.id === lastQueuedId) + 1
       : 0;
 
     const newMessages = botMessages.slice(startIndex);
+    if (!newMessages.length) return;
 
-    if (newMessages.length === 0) return;
+    isSpeechManuallyStoppedRef.current = false;
 
     newMessages.forEach((m) => {
       speechQueueRef.current.push(m.text);
@@ -723,6 +789,26 @@ const ChatInterface = () => {
       behavior: "smooth",
     });
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis.cancel();
+      speechQueueRef.current = [];
+      isSpeechPlayingRef.current = false;
+      isSpeechManuallyStoppedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const killSpeech = () => window.speechSynthesis.cancel();
+    window.addEventListener("beforeunload", killSpeech);
+
+    return () => {
+      window.removeEventListener("beforeunload", killSpeech);
+      window.speechSynthesis.cancel();
+      setShowSpeakingVideo(false);
+    };
+  }, []);
 
   return (
     <div className="ai-tutor-app">
@@ -908,10 +994,18 @@ const ChatInterface = () => {
 
                 <div ref={messagesEndRef} />
               </div>
-
-              {isSpeaking && (
+              {showSpeakingVideo && (
                 <div className="ai-speaking-overlay">
+                  <button
+                    className="close-speaking-btn"
+                    onClick={stopSpeechManually}
+                    title="Stop voice"
+                  >
+                    <FiX size={18} />
+                  </button>
+
                   <video
+                    ref={speakingVideoRef}
                     src="/women_speaking.mp4"
                     autoPlay
                     muted
@@ -919,7 +1013,7 @@ const ChatInterface = () => {
                     playsInline
                     height={"200px"}
                     width={"200px"}
-                    style={{ borderRadius: "30px" }}
+                    style={{ borderRadius: "30px", pointerEvents: "none" }}
                   />
                 </div>
               )}

@@ -430,12 +430,26 @@
   flex: 1;
   min-width: 0;
 }
+
 .ai-speaking-overlay {
-  position: absolute;
-  right: 40px;
-  bottom: 85px;
-  z-index: 50;
+  position: fixed;
+  bottom: 120px;
+  right: 20px;
+  z-index: 9999;
 }
+
+.close-speaking-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px;
+}
+
 .voice-btn {
   border: none;
   width: 35px;
