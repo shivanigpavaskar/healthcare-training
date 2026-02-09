@@ -96,8 +96,7 @@ const ChatInterface = () => {
   const prevStatusRef = useRef<string | null>(null);
   const [_statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
   const [_mediaLoader, setMediaLoader] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeechPlayingRef = useRef(false);
   const isSpeechManuallyStoppedRef = useRef(false);
