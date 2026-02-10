@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "tsx server.ts",
+    "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
@@ -12,7 +14,11 @@
   "dependencies": {
     "axios": "^1.9.0",
     "bootstrap-icons": "^1.13.1",
+    "concurrently": "^9.2.1",
+    "cors": "^2.8.6",
     "dompurify": "^3.2.6",
+    "dotenv": "^17.2.4",
+    "express": "^5.2.1",
     "he": "^1.2.0",
     "json5": "^2.2.3",
     "nanoid": "^5.1.5",
@@ -23,11 +29,15 @@
     "react-router-dom": "^7.6.2",
     "react-select": "^5.10.2",
     "sass": "^1.89.1",
+    "tsx": "^4.21.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/he": "^1.2.3",
+    "@types/node": "^25.2.2",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.4.1",

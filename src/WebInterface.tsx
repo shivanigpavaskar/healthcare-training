@@ -96,16 +96,64 @@ const ChatInterface = () => {
   const prevStatusRef = useRef<string | null>(null);
   const [_statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
   const [_mediaLoader, setMediaLoader] = useState(false);
-   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+  // const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeechPlayingRef = useRef(false);
   const isSpeechManuallyStoppedRef = useRef(false);
   const lastQueuedMessageIdRef = useRef<string | null>(null);
   const [showSpeakingVideo, setShowSpeakingVideo] = useState(false);
   const speakingVideoRef = useRef<HTMLVideoElement | null>(null);
+  const elevenAudioRef = useRef<HTMLAudioElement | null>(null);
+  // const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
+
+  // const ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
+
+ const speakWithElevenLabs = async (text: string) => {
+   if (isSpeechManuallyStoppedRef.current) return;
+
+   try {
+     isSpeechPlayingRef.current = true;
+     // setShowSpeakingVideo(true); // Moved down
+
+     const response = await fetch("/api/tts/elevenlabs", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ text }),
+     });
+
+     if (!response.ok) {
+       throw new Error("TTS failed");
+     }
+
+     const audioBlob = await response.blob();
+     const audioUrl = URL.createObjectURL(audioBlob);
+
+     if (!elevenAudioRef.current) {
+       elevenAudioRef.current = new Audio();
+     }
+
+     elevenAudioRef.current.src = audioUrl;
+     elevenAudioRef.current.preload = "auto";
+
+     await elevenAudioRef.current.play();
+     setShowSpeakingVideo(true); // Start video only when audio plays
+
+     elevenAudioRef.current.onended = () => {
+       isSpeechPlayingRef.current = false;
+       setShowSpeakingVideo(false);
+       playNextInQueue();
+     };
+   } catch (err) {
+     console.error("ElevenLabs error:", err);
+     isSpeechPlayingRef.current = false;
+     setShowSpeakingVideo(false);
+   }
+ };
+
+;
 
   // stores active utterance (browser-level control)
-  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const lessonOptions = [
     { value: "cpr", label: "Critical concepts of high-quality CPR" },
@@ -127,46 +175,45 @@ const ChatInterface = () => {
     },
   ];
 
-  useEffect(() => {
-   const loadVoices = () => {
-     const voices = window.speechSynthesis.getVoices();
+  // useEffect(() => {
+  //   const loadVoices = () => {
+  //     const voices = window.speechSynthesis.getVoices();
 
-     // 🎯 Best → worst (human → robotic)
-     const preferredFemaleNames = [
-       // 🔥 Most human (Edge / Windows Neural)
-       "Microsoft Aria Neural",
-       "Microsoft Jenny Neural",
-       "Microsoft Sonia Neural",
+  //     // 🎯 Best → worst (human → robotic)
+  //     const preferredFemaleNames = [
+  //       // 🔥 Most human (Edge / Windows Neural)
+  //       "Microsoft Aria Neural",
+  //       "Microsoft Jenny Neural",
+  //       "Microsoft Sonia Neural",
 
-       // 🔥 Safari (very natural)
-       "Samantha",
-       "Karen",
-       "Tessa",
+  //       // 🔥 Safari (very natural)
+  //       "Samantha",
+  //       "Karen",
+  //       "Tessa",
 
-       // 👍 Chrome (acceptable)
-       "Google UK English Female",
+  //       // 👍 Chrome (acceptable)
+  //       "Google UK English Female",
 
-       // ⚠️ Last fallback only
-       "Microsoft Zira",
-     ];
+  //       // ⚠️ Last fallback only
+  //       "Microsoft Zira",
+  //     ];
 
-     let selected =
-       voices.find((v) =>
-         preferredFemaleNames.some((name) =>
-           v.name.toLowerCase().includes(name.toLowerCase()),
-         ),
-       ) ||
-       voices.find((v) => /female|woman/i.test(v.name)) ||
-       voices.find((v) => v.lang.startsWith("en")) ||
-       null;
+  //     let selected =
+  //       voices.find((v) =>
+  //         preferredFemaleNames.some((name) =>
+  //           v.name.toLowerCase().includes(name.toLowerCase()),
+  //         ),
+  //       ) ||
+  //       voices.find((v) => /female|woman/i.test(v.name)) ||
+  //       voices.find((v) => v.lang.startsWith("en")) ||
+  //       null;
 
-     selectedVoiceRef.current = selected;
-   };
+  //     selectedVoiceRef.current = selected;
+  //   };
 
-
-    loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-  }, []);
+  //   loadVoices();
+  //   window.speechSynthesis.onvoiceschanged = loadVoices;
+  // }, []);
 
   let offset = 0;
   let allMessages: any[] = [];
@@ -194,55 +241,64 @@ const ChatInterface = () => {
     );
   };
 
- const playNextInQueue = () => {
-   if (isSpeechPlayingRef.current) return;
-   if (!speechQueueRef.current.length) return;
-   if (isSpeechManuallyStoppedRef.current) return;
+  // const playNextInQueue = () => {
+  //   if (isSpeechPlayingRef.current) return;
+  //   if (!speechQueueRef.current.length) return;
+  //   if (isSpeechManuallyStoppedRef.current) return;
 
-   window.speechSynthesis.cancel();
+  //   window.speechSynthesis.cancel();
 
-   const text = speechQueueRef.current.shift();
-   if (!text) return;
+  //   const text = speechQueueRef.current.shift();
+  //   if (!text) return;
 
-   // 🧠 HUMAN PAUSES (very important)
-   const cleanText = text.replace(/<[^>]*>/g, "").replace(/([.!?])/g, "$1,");
+  //   // 🧠 HUMAN PAUSES (very important)
+  //   const cleanText = text.replace(/<[^>]*>/g, "").replace(/([.!?])/g, "$1,");
 
-   const utterance = new SpeechSynthesisUtterance(cleanText);
-   activeUtteranceRef.current = utterance;
-   isSpeechPlayingRef.current = true;
+  //   const utterance = new SpeechSynthesisUtterance(cleanText);
+  //   activeUtteranceRef.current = utterance;
+  //   isSpeechPlayingRef.current = true;
 
-   // 🎧 HUMAN VOICE TUNING
-   utterance.lang = "en-US";
-   utterance.rate = 0.9; // slower, calm
-   utterance.pitch = 1.2; // warm female tone
-   utterance.volume = 1;
+  //   // 🎧 HUMAN VOICE TUNING
+  //   utterance.lang = "en-US";
+  //   utterance.rate = 0.9; // slower, calm
+  //   utterance.pitch = 1.2; // warm female tone
+  //   utterance.volume = 1;
 
-   if (selectedVoiceRef.current) {
-     utterance.voice = selectedVoiceRef.current;
-   }
+  //   if (selectedVoiceRef.current) {
+  //     utterance.voice = selectedVoiceRef.current;
+  //   }
 
-   utterance.onstart = () => {
-     setShowSpeakingVideo(true);
-   };
+  //   utterance.onstart = () => {
+  //     setShowSpeakingVideo(true);
+  //   };
 
-   utterance.onend = () => {
-     isSpeechPlayingRef.current = false;
-     activeUtteranceRef.current = null;
-     setShowSpeakingVideo(false);
+  //   utterance.onend = () => {
+  //     isSpeechPlayingRef.current = false;
+  //     activeUtteranceRef.current = null;
+  //     setShowSpeakingVideo(false);
 
-     if (!isSpeechManuallyStoppedRef.current) {
-       playNextInQueue();
-     }
-   };
+  //     if (!isSpeechManuallyStoppedRef.current) {
+  //       playNextInQueue();
+  //     }
+  //   };
 
-   // ⚠️ Chrome reliability fix
-   setTimeout(() => {
-     if (!isSpeechManuallyStoppedRef.current) {
-       window.speechSynthesis.speak(utterance);
-     }
-   }, 80);
- };
+  //   // ⚠️ Chrome reliability fix
+  //   setTimeout(() => {
+  //     if (!isSpeechManuallyStoppedRef.current) {
+  //       window.speechSynthesis.speak(utterance);
+  //     }
+  //   }, 80);
+  // };
+const playNextInQueue = () => {
+  if (isSpeechPlayingRef.current) return;
+  if (!speechQueueRef.current.length) return;
+  if (isSpeechManuallyStoppedRef.current) return;
 
+  const text = speechQueueRef.current.shift();
+  if (!text) return;
+
+  speakWithElevenLabs(text);
+};
 
   const decodeHtml = (html: string): string => {
     const txt = document.createElement("textarea");
@@ -637,22 +693,19 @@ const ChatInterface = () => {
   //   };
   // }, []);
 
-  const stopSpeechManually = () => {
-    isSpeechManuallyStoppedRef.current = true;
+const stopSpeechManually = () => {
+  isSpeechManuallyStoppedRef.current = true;
 
-    window.speechSynthesis.cancel();
+  if (elevenAudioRef.current) {
+    elevenAudioRef.current.pause();
+    elevenAudioRef.current.currentTime = 0;
+  }
 
-    speechQueueRef.current = [];
-    activeUtteranceRef.current = null;
-    isSpeechPlayingRef.current = false;
+  speechQueueRef.current = [];
+  isSpeechPlayingRef.current = false;
+  setShowSpeakingVideo(false);
+};
 
-    if (speakingVideoRef.current) {
-      speakingVideoRef.current.pause();
-      speakingVideoRef.current.currentTime = 0;
-    }
-
-    setShowSpeakingVideo(false);
-  };
 
   // useEffect(() => {
   //   const botMessages = messages.filter(
@@ -682,31 +735,32 @@ const ChatInterface = () => {
   //   playNextInQueue();
   // }, [messages]);
 
-  useEffect(() => {
-    const botMessages = messages.filter(
-      (m) => (m.sender === "bot" || m.sender === "agent") && m.id !== "loader",
-    );
+ useEffect(() => {
+   const botMessages = messages.filter(
+     (m) => (m.sender === "bot" || m.sender === "agent") && m.id !== "loader",
+   );
 
-    if (!botMessages.length) return;
+   if (!botMessages.length) return;
 
-    const lastQueuedId = lastQueuedMessageIdRef.current;
-    const startIndex = lastQueuedId
-      ? botMessages.findIndex((m) => m.id === lastQueuedId) + 1
-      : 0;
+   const lastQueuedId = lastQueuedMessageIdRef.current;
+   const startIndex = lastQueuedId
+     ? botMessages.findIndex((m) => m.id === lastQueuedId) + 1
+     : 0;
 
-    const newMessages = botMessages.slice(startIndex);
-    if (!newMessages.length) return;
+   const newMessages = botMessages.slice(startIndex);
+   if (!newMessages.length) return;
 
-    isSpeechManuallyStoppedRef.current = false;
+   isSpeechManuallyStoppedRef.current = false;
 
-    newMessages.forEach((m) => {
-      speechQueueRef.current.push(m.text);
-    });
+   newMessages.forEach((m) => {
+     speechQueueRef.current.push(m.text);
+   });
 
-    lastQueuedMessageIdRef.current = newMessages[newMessages.length - 1].id;
+   lastQueuedMessageIdRef.current = newMessages[newMessages.length - 1].id;
 
-    playNextInQueue();
-  }, [messages]);
+   playNextInQueue();
+ }, [messages]);
+
 
   const noUserMessages =
     messages.filter((m) => m.sender === "user").length === 0;
