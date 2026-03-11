@@ -96,64 +96,62 @@ const ChatInterface = () => {
   const prevStatusRef = useRef<string | null>(null);
   const [_statusMessages, setStatusMessages] = useState<StatusMessage[]>([]);
   const [_mediaLoader, setMediaLoader] = useState(false);
-  // const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
+   const selectedVoiceRef = useRef<SpeechSynthesisVoice | null>(null);
   const speechQueueRef = useRef<string[]>([]);
   const isSpeechPlayingRef = useRef(false);
   const isSpeechManuallyStoppedRef = useRef(false);
   const lastQueuedMessageIdRef = useRef<string | null>(null);
   const [showSpeakingVideo, setShowSpeakingVideo] = useState(false);
   const speakingVideoRef = useRef<HTMLVideoElement | null>(null);
-  const elevenAudioRef = useRef<HTMLAudioElement | null>(null);
-  // const ELEVENLABS_API_KEY = import.meta.env.VITE_ELEVENLABS_API_KEY;
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
 
-  // const ELEVENLABS_VOICE_ID = "21m00Tcm4TlvDq8ikWAM";
 
- const speakWithElevenLabs = async (text: string) => {
-   if (isSpeechManuallyStoppedRef.current) return;
+const startRecording = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-   try {
-     isSpeechPlayingRef.current = true;
-     // setShowSpeakingVideo(true); // Moved down
+  const mediaRecorder = new MediaRecorder(stream);
+  mediaRecorderRef.current = mediaRecorder;
+  audioChunksRef.current = [];
 
-     const response = await fetch("/api/tts/elevenlabs", {
-       method: "POST",
-       headers: { "Content-Type": "application/json" },
-       body: JSON.stringify({ text }),
-     });
+  mediaRecorder.ondataavailable = (event) => {
+    audioChunksRef.current.push(event.data);
+  };
 
-     if (!response.ok) {
-       throw new Error("TTS failed");
-     }
+  mediaRecorder.start();
+  setIsRecording(true);
+};
+const stopRecording = async () => {
+  mediaRecorderRef.current?.stop();
+  setIsRecording(false);
 
-     const audioBlob = await response.blob();
-     const audioUrl = URL.createObjectURL(audioBlob);
+  mediaRecorderRef.current!.onstop = async () => {
+    const audioBlob = new Blob(audioChunksRef.current, {
+      type: "audio/webm",
+    });
 
-     if (!elevenAudioRef.current) {
-       elevenAudioRef.current = new Audio();
-     }
+    const formData = new FormData();
+    formData.append("audio", audioBlob, "voice.webm");
 
-     elevenAudioRef.current.src = audioUrl;
-     elevenAudioRef.current.preload = "auto";
+    const res = await fetch("/api/stt/whisper", {
+      method: "POST",
+      body: formData,
+    });
 
-     await elevenAudioRef.current.play();
-     setShowSpeakingVideo(true); // Start video only when audio plays
+    const data = await res.json();
 
-     elevenAudioRef.current.onended = () => {
-       isSpeechPlayingRef.current = false;
-       setShowSpeakingVideo(false);
-       playNextInQueue();
-     };
-   } catch (err) {
-     console.error("ElevenLabs error:", err);
-     isSpeechPlayingRef.current = false;
-     setShowSpeakingVideo(false);
-   }
- };
+    if (data.text) {
+      setInput((prev) => (prev ? prev + " " + data.text : data.text));
+    }
+  };
+};
 
-;
+
+ 
 
   // stores active utterance (browser-level control)
-  // const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const lessonOptions = [
     { value: "cpr", label: "Critical concepts of high-quality CPR" },
@@ -175,45 +173,45 @@ const ChatInterface = () => {
     },
   ];
 
-  // useEffect(() => {
-  //   const loadVoices = () => {
-  //     const voices = window.speechSynthesis.getVoices();
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices();
 
-  //     // 🎯 Best → worst (human → robotic)
-  //     const preferredFemaleNames = [
-  //       // 🔥 Most human (Edge / Windows Neural)
-  //       "Microsoft Aria Neural",
-  //       "Microsoft Jenny Neural",
-  //       "Microsoft Sonia Neural",
+      // 🎯 Best → worst (human → robotic)
+      const preferredFemaleNames = [
+        // 🔥 Most human (Edge / Windows Neural)
+        "Microsoft Aria Neural",
+        "Microsoft Jenny Neural",
+        "Microsoft Sonia Neural",
 
-  //       // 🔥 Safari (very natural)
-  //       "Samantha",
-  //       "Karen",
-  //       "Tessa",
+        // 🔥 Safari (very natural)
+        "Samantha",
+        "Karen",
+        "Tessa",
 
-  //       // 👍 Chrome (acceptable)
-  //       "Google UK English Female",
+        // 👍 Chrome (acceptable)
+        "Google UK English Female",
 
-  //       // ⚠️ Last fallback only
-  //       "Microsoft Zira",
-  //     ];
+        // ⚠️ Last fallback only
+        "Microsoft Zira",
+      ];
 
-  //     let selected =
-  //       voices.find((v) =>
-  //         preferredFemaleNames.some((name) =>
-  //           v.name.toLowerCase().includes(name.toLowerCase()),
-  //         ),
-  //       ) ||
-  //       voices.find((v) => /female|woman/i.test(v.name)) ||
-  //       voices.find((v) => v.lang.startsWith("en")) ||
-  //       null;
+      let selected =
+        voices.find((v) =>
+          preferredFemaleNames.some((name) =>
+            v.name.toLowerCase().includes(name.toLowerCase()),
+          ),
+        ) ||
+        voices.find((v) => /female|woman/i.test(v.name)) ||
+        voices.find((v) => v.lang.startsWith("en")) ||
+        null;
 
-  //     selectedVoiceRef.current = selected;
-  //   };
+      selectedVoiceRef.current = selected;
+    };
 
-  //   loadVoices();
-  //   window.speechSynthesis.onvoiceschanged = loadVoices;
-  // }, []);
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
 
   let offset = 0;
   let allMessages: any[] = [];
@@ -297,7 +295,50 @@ const playNextInQueue = () => {
   const text = speechQueueRef.current.shift();
   if (!text) return;
 
-  speakWithElevenLabs(text);
+  // prefer browser voices (selectedVoiceRef)
+  const cleanText = String(text).replace(/<[^>]*>/g, "").replace(/([.!?])/g, "$1,");
+
+  if (typeof window !== "undefined" && 'speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      activeUtteranceRef.current = utterance;
+      isSpeechPlayingRef.current = true;
+
+      utterance.lang = "en-US";
+      utterance.rate = 0.95; // slightly calm
+      utterance.pitch = 1.15; // warm female tone
+      utterance.volume = 1;
+
+      // use selected voice if available, otherwise let browser choose
+      if (selectedVoiceRef.current) utterance.voice = selectedVoiceRef.current;
+
+      utterance.onstart = () => setShowSpeakingVideo(true);
+
+      utterance.onend = () => {
+        isSpeechPlayingRef.current = false;
+        activeUtteranceRef.current = null;
+        setShowSpeakingVideo(false);
+        if (!isSpeechManuallyStoppedRef.current) {
+          setTimeout(() => playNextInQueue(), 120);
+        }
+      };
+
+      // small Chrome reliability delay
+      setTimeout(() => {
+        if (!isSpeechManuallyStoppedRef.current) {
+          window.speechSynthesis.speak(utterance);
+        }
+      }, 80);
+    } catch (e) {
+      console.error("Browser TTS error:", e);
+      isSpeechPlayingRef.current = false;
+      setShowSpeakingVideo(false);
+    }
+  } else {
+    console.warn("No TTS available in this browser");
+  }
 };
 
   const decodeHtml = (html: string): string => {
@@ -695,12 +736,11 @@ const playNextInQueue = () => {
 
 const stopSpeechManually = () => {
   isSpeechManuallyStoppedRef.current = true;
-
-  if (elevenAudioRef.current) {
-    elevenAudioRef.current.pause();
-    elevenAudioRef.current.currentTime = 0;
+  if (typeof window !== "undefined" && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
   }
 
+  activeUtteranceRef.current = null;
   speechQueueRef.current = [];
   isSpeechPlayingRef.current = false;
   setShowSpeakingVideo(false);
@@ -1073,6 +1113,12 @@ const stopSpeechManually = () => {
 
               <div className="chat-input">
                 <div className="input-container">
+                  <button
+                    className="attach-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <FiPaperclip size={18} />
+                  </button>
                   {filePreviewUrl && pendingFile && (
                     <div className="inline-preview">
                       <span>📄</span>
@@ -1092,13 +1138,6 @@ const stopSpeechManually = () => {
                   )}
 
                   <input
-                    type="file"
-                    ref={fileInputRef}
-                    hidden
-                    onChange={handleMediaUpload}
-                  />
-
-                  <input
                     className="message-input"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -1110,14 +1149,24 @@ const stopSpeechManually = () => {
                     }
                     onKeyDown={(e) => e.key === "Enter" && handleSend()}
                   />
-                  <button className="voice-btn">
-                    <MdOutlineKeyboardVoice />
-                  </button>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    hidden
+                    onChange={handleMediaUpload}
+                  />
                   <button
-                    className="attach-btn"
-                    onClick={() => fileInputRef.current?.click()}
+                    className={`voice-btn ${isRecording ? "recording" : ""}`}
+                    onClick={() => {
+                      if (isRecording) {
+                        stopRecording();
+                      } else {
+                        startRecording();
+                      }
+                    }}
+                    title="Record voice"
                   >
-                    <FiPaperclip size={18} />
+                    <MdOutlineKeyboardVoice />
                   </button>
                 </div>
 
