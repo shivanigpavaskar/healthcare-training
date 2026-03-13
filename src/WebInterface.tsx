@@ -18,7 +18,9 @@ import { MdOutlineKeyboardVoice } from "react-icons/md";
 import { BsHeartPulse, BsPlusLg } from "react-icons/bs";
 import { GoGraph } from "react-icons/go";
 import Select from "react-select";
-
+// import SpeechRecognition, {
+//   useSpeechRecognition,
+// } from "react-speech-recognition";
 const SESSION_KEY = "chat_session_id";
 const SESSION_TIMESTAMP_KEY = "chat_session_created_at";
 const MAX_AGE_MS = 60 * 60 * 1000;
@@ -103,50 +105,32 @@ const ChatInterface = () => {
   const lastQueuedMessageIdRef = useRef<string | null>(null);
   const [showSpeakingVideo, setShowSpeakingVideo] = useState(false);
   const speakingVideoRef = useRef<HTMLVideoElement | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
+// const {
+//   transcript,
+//   listening,
+//   resetTranscript,
+//   browserSupportsSpeechRecognition,
+// } = useSpeechRecognition();
+
+// useEffect(() => {
+//   if (transcript) {
+//     setInput(transcript);
+//   }
+// }, [transcript]);
 
 
-const startRecording = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-  const mediaRecorder = new MediaRecorder(stream);
-  mediaRecorderRef.current = mediaRecorder;
-  audioChunksRef.current = [];
+// const startRecording = () => {
+//   resetTranscript();
+//   SpeechRecognition.startListening({
+//     continuous: true,
+//     language: "en-US",
+//   });
+// };
 
-  mediaRecorder.ondataavailable = (event) => {
-    audioChunksRef.current.push(event.data);
-  };
-
-  mediaRecorder.start();
-  setIsRecording(true);
-};
-const stopRecording = async () => {
-  mediaRecorderRef.current?.stop();
-  setIsRecording(false);
-
-  mediaRecorderRef.current!.onstop = async () => {
-    const audioBlob = new Blob(audioChunksRef.current, {
-      type: "audio/webm",
-    });
-
-    const formData = new FormData();
-    formData.append("audio", audioBlob, "voice.webm");
-
-    const res = await fetch("/api/stt/whisper", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
-
-    if (data.text) {
-      setInput((prev) => (prev ? prev + " " + data.text : data.text));
-    }
-  };
-};
-
+// const stopRecording = () => {
+//   SpeechRecognition.stopListening();
+// };
 
  
 
@@ -1156,14 +1140,17 @@ const stopSpeechManually = () => {
                     onChange={handleMediaUpload}
                   />
                   <button
-                    className={`voice-btn ${isRecording ? "recording" : ""}`}
-                    onClick={() => {
-                      if (isRecording) {
-                        stopRecording();
-                      } else {
-                        startRecording();
-                      }
-                    }}
+                    // className={`voice-btn
+                    //   //  ${'listening' ? "recording" : ""}
+                    //    `}
+                    className="voice-btn"
+                    // onClick={() => {
+                    //   // if (listening) {
+                    //     stopRecording();
+                    //   } else {
+                    //     // startRecording();
+                    //   }
+                    // }}
                     title="Record voice"
                   >
                     <MdOutlineKeyboardVoice />
